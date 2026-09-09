@@ -58,12 +58,14 @@ create index if not exists idx_kw2_keyword on keyword2_responses (keyword2);
 
 -- ----------------------------------------------------------------------------
 -- 4. TABLE 3 - Keyword 3 responses
---    Mobile Number, Keyword 3, Date, Time
+--    Mobile Number, Keyword 3, Reason, Other, Date, Time
 -- ----------------------------------------------------------------------------
 create table if not exists keyword3_responses (
   id             bigint generated always as identity primary key,
   mobile_number  text not null,
   keyword3       text not null,
+  reason         text,
+  other          text,
   response_date  date not null,
   response_time  time not null,
   created_at     timestamptz not null default now()
@@ -134,8 +136,8 @@ create or replace view consolidated_report as
     id,
     mobile_number,
     keyword3 as keyword,
-    null::text as reason,
-    null::text as other,
+    reason,
+    other,
     response_date,
     response_time,
     created_at

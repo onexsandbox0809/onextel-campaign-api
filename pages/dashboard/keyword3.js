@@ -11,6 +11,8 @@ export async function getServerSideProps(context) {
 const COLUMNS = [
   { key: 'mobile_number', label: 'Mobile Number' },
   { key: 'keyword3', label: 'Keyword 3' },
+  { key: 'reason', label: 'Reason' },
+  { key: 'other', label: 'Other' },
   { key: 'response_date', label: 'Date' },
   { key: 'response_time', label: 'Time' },
 ];
