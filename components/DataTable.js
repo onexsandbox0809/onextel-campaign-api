@@ -12,7 +12,7 @@ export default function DataTable({ columns, rows, loading, pagination, onPageCh
           <thead>
             <tr>
               {columns.map((col) => (
-                <th key={col.key}>{col.label}</th>
+                <th key={col.key} className={col.key === 'reason' ? 'reason-column' : ''}>{col.label}</th>
               ))}
             </tr>
           </thead>
@@ -33,7 +33,7 @@ export default function DataTable({ columns, rows, loading, pagination, onPageCh
               rows.map((row, idx) => (
                 <tr key={row.id || idx}>
                   {columns.map((col) => (
-                    <td key={col.key}>{col.render ? col.render(row) : row[col.key] ?? '-'}</td>
+                    <td key={col.key} className={col.key === 'reason' ? 'reason-cell' : ''}>{col.render ? col.render(row) : row[col.key] ?? '-'}</td>
                   ))}
                 </tr>
               ))

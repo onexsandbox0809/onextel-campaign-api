@@ -193,6 +193,22 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table tbody tr:hover { background: #fbfbfc; }
 
+/* Wrap long Reason values across all reports without forcing the table wider. */
+.data-table th.reason-column,
+.data-table td.reason-cell {
+  width: 260px;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.data-table td.reason-cell {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.45;
+  vertical-align: top;
+}
+
 .badge-source {
   display: inline-block;
   padding: 3px 10px;
