@@ -1,6 +1,7 @@
 import Layout from '../../components/Layout';
 import Filters from '../../components/Filters';
 import DataTable from '../../components/DataTable';
+import ExportButtons from '../../components/ExportButtons';
 import { useDashboardData } from '../../lib/useDashboardData';
 import { requireAuth } from '../../lib/withAuthSSR';
 
@@ -28,6 +29,12 @@ export default function Keyword2Page({ username }) {
         onApply={d.applyFilters}
         onClear={d.clearFilters}
         keywordLabel="Keyword 2"
+      />
+      <ExportButtons
+        endpoint="/api/dashboard/keyword2"
+        filters={d.appliedFilters}
+        columns={COLUMNS}
+        filename="keyword2-report"
       />
       {d.error ? <div className="login-error">{d.error}</div> : null}
       <DataTable

@@ -344,3 +344,31 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
   .nav-spacer { display: none; }
   .main { padding: 20px; }
 }
+
+/* ---------- Report exports ---------- */
+.export-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.export-label {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+.btn-export {
+  background: #fff;
+  border-color: var(--border);
+  color: var(--ink);
+  min-width: 78px;
+}
+
+.btn-export:hover:not(:disabled) {
+  border-color: var(--onextel-orange);
+  color: var(--onextel-orange);
+}

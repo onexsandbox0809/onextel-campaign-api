@@ -1,6 +1,7 @@
 import Layout from '../../components/Layout';
 import Filters from '../../components/Filters';
 import DataTable from '../../components/DataTable';
+import ExportButtons from '../../components/ExportButtons';
 import { useDashboardData } from '../../lib/useDashboardData';
 import { requireAuth } from '../../lib/withAuthSSR';
 
@@ -47,6 +48,12 @@ export default function ConsolidatedReportPage({ username }) {
         onApply={d.applyFilters}
         onClear={d.clearFilters}
         keywordLabel="Keyword"
+      />
+      <ExportButtons
+        endpoint="/api/dashboard/consolidated"
+        filters={d.appliedFilters}
+        columns={COLUMNS}
+        filename="consolidated-report"
       />
       {d.error ? <div className="login-error">{d.error}</div> : null}
       <DataTable

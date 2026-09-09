@@ -102,7 +102,9 @@ create index if not exists idx_kwsel_keyword on keyword_selected_responses (keyw
 --    A view stays automatically in sync with the 4 base tables and is what
 --    the "Consolidated Report" dashboard reads from.
 -- ----------------------------------------------------------------------------
-create or replace view consolidated_report as
+drop view if exists consolidated_report;
+
+create view consolidated_report as
   select
     'keyword1' as source_table,
     id,
