@@ -14,14 +14,14 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({
       success: false,
-      error: 'Method not allowed. Use POST.'
+      error: 'Method not allowed. Use POST.',
     });
   }
 
   if (!isInboundRequestAuthorized(req)) {
     return res.status(401).json({
       success: false,
-      error: 'Unauthorized: invalid or missing x-api-key.'
+      error: 'Unauthorized: invalid or missing x-api-key.',
     });
   }
 
@@ -30,8 +30,15 @@ export default async function handler(req, res) {
   const mobile_number = normalizeMobileNumber(body.mobile_number);
   const keyword3 = requiredString(body.keyword3, 200);
 
-  // Other is optional
-  const other = body.other == null ? null : String(body.other).trim().slice(0, 2000);
+  const reason =
+    body.reason == null
+      ? null
+      : String(body.reason).trim().slice(0, 2000);
+
+  const other =
+    body.other == null
+      ? null
+      : String(body.other).trim().slice(0, 2000);
 
   const errors = [];
 
@@ -48,7 +55,7 @@ export default async function handler(req, res) {
   if (errors.length) {
     return res.status(400).json({
       success: false,
-      error: errors.join(' ')
+      error: errors.join(' '),
     });
   }
 
@@ -63,13 +70,14 @@ export default async function handler(req, res) {
         {
           mobile_number,
           keyword3,
+          reason,
           other,
           response_date,
-          response_time
-        }
+          response_time,
+        },
       ])
       .select(
-        'id, mobile_number, keyword3, other, response_date, response_time'
+        'id, mobile_number, keyword3, reason, other, response_date, response_time'
       )
       .single();
 
@@ -78,21 +86,20 @@ export default async function handler(req, res) {
 
       return res.status(500).json({
         success: false,
-        error: 'Failed to save keyword3 response.'
+        error: 'Failed to save keyword3 response.',
       });
     }
 
     return res.status(201).json({
       success: true,
-      data
+      data,
     });
-
   } catch (err) {
     console.error('keyword3 handler error:', err);
 
     return res.status(500).json({
       success: false,
-      error: 'Internal server error.'
+      error: 'Internal server error.',
     });
   }
-};
+}
