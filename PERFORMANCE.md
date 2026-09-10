@@ -19,13 +19,17 @@ and the plan/infra settings you need alongside them.
 2. **`lib/dashboardQuery.js`** — caps how deep OFFSET-based pagination can
    go (400,000 rows), returning a friendly error instead of letting a very
    deep page request tie up a database worker.
-3. **`lib/rateLimit.js`** — a lightweight per-instance limiter applied to
-   the inbound keyword-collection endpoints (300 req/min/IP by default,
-   tune with `INBOUND_RATE_LIMIT_PER_MINUTE`) and to `/api/login` (15
-   req/min/IP, `LOGIN_RATE_LIMIT_PER_MINUTE`). It's a real, free safety net
-   against one runaway caller, but because each Vercel function instance
-   has its own memory, it does **not** enforce one global limit across
-   thousands of concurrent instances. For that, see "Distributed rate
+3. **`lib/rateLimit.js`** — a lightweight per-instance limiter applied only
+   to `/api/login` (15 req/min/IP, `LOGIN_RATE_LIMIT_PER_MINUTE`) as
+   brute-force protection. It is deliberately **not** applied to the
+   keyword-collection endpoints: those receive real campaign volume from a
+   single trusted bot-platform IP, gated by `INBOUND_API_KEY` instead of an
+   IP throttle -- an IP-based limit there would just block your own
+   platform's traffic. Because each Vercel function instance has its own
+   memory, even the login limiter doesn't enforce one global limit across
+   thousands of concurrent instances -- it just slows down brute-force
+   attempts on a single warm instance, which is all it needs to do for
+   login. For anything needing a real global limit, see "Distributed rate
    limiting" below.
 4. **`vercel.json`** — `maxDuration` raised from 10s to 15s for headroom
    under load.

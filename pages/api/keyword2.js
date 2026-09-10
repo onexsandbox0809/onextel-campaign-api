@@ -2,10 +2,10 @@ const { getSupabaseAdmin } = require('../../lib/supabaseAdmin');
 const { nowInIstanbul } = require('../../lib/timezone');
 const { normalizeMobileNumber, requiredString, optionalString } = require('../../lib/validate');
 const { isInboundRequestAuthorized } = require('../../lib/auth');
-const { checkRateLimit, getClientIp } = require('../../lib/rateLimit');
 
-const RATE_LIMIT_PER_MINUTE = parseInt(process.env.INBOUND_RATE_LIMIT_PER_MINUTE, 10) || 300;
-
+// No per-IP rate limit here on purpose: inbound traffic is expected to come
+// from a single trusted bot-platform IP running a real campaign, and it's
+// already gated by the x-api-key check below.
 export const config = {
   api: {
     bodyParser: { sizeLimit: '100kb' },
@@ -20,10 +20,6 @@ export default async function handler(req, res) {
 
   if (!isInboundRequestAuthorized(req)) {
     return res.status(401).json({ success: false, error: 'Unauthorized: invalid or missing x-api-key.' });
-  }
-
-  if (!checkRateLimit(`${getClientIp(req)}:keyword2`, RATE_LIMIT_PER_MINUTE)) {
-    return res.status(429).json({ success: false, error: 'Too many requests. Please slow down and retry shortly.' });
   }
 
   const body = req.body || {};

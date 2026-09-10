@@ -215,9 +215,11 @@ the column list) if you want it as its own sidebar tab too.
   under concurrent filtered report requests.
 - `lib/dashboardQuery.js` now caps how deep OFFSET pagination can go, so a
   malicious/broken deep-page request can't tie up a database worker.
-- `lib/rateLimit.js` adds a lightweight per-instance rate limit on the
-  inbound keyword endpoints and login, as a cheap safety net against a
-  single runaway caller.
+- `lib/rateLimit.js` adds a lightweight per-instance rate limit on
+  `/api/login` only (brute-force protection). The keyword-collection
+  endpoints are intentionally **not** IP-rate-limited — they're expected to
+  receive high-volume campaign traffic from a single trusted bot-platform
+  IP, authenticated via `INBOUND_API_KEY` instead.
 - Request bodies are capped (100KB for keyword APIs, 10KB for login) so a
   malformed/oversized payload can't tie up a function.
 - **The remaining real ceiling is Supabase compute**, not this code — see
