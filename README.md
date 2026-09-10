@@ -194,29 +194,37 @@ the column list) if you want it as its own sidebar tab too.
 
 ---
 
-## 6. Concurrency & latency (target: 20,000 concurrent requests)
+## 6. Concurrency & latency (target: 10,000 concurrent requests)
 
 - **Vercel serverless functions auto-scale horizontally per request** —
-  there's no shared process to bottleneck, so 20k concurrent POSTs spin up
-  as many isolated function instances as needed (subject to your Vercel
-  plan's concurrency limit — confirm this with Vercel for Pro/Enterprise
-  before go-live traffic).
+  there's no shared process to bottleneck, so concurrent POSTs spin up as
+  many isolated function instances as needed (subject to your Vercel plan's
+  concurrency limit — check current limits for your plan before go-live
+  traffic, they change over time).
 - **Supabase writes go through PostgREST**, which sits in front of a
-  built-in connection pooler (pgbouncer) — the app never opens raw Postgres
+  built-in connection pooler — the app never opens raw Postgres
   connections, so thousands of parallel HTTP inserts don't exhaust
   Postgres's connection limit the way raw `pg` connections would.
 - `lib/supabaseAdmin.js` caches one Supabase client per warm function
   instance instead of re-instantiating it every invocation, shaving
   cold-path latency under bursty load.
-- Every table has indexes on `mobile_number`, `response_date`, and its
-  keyword column, so dashboard filtering and the `.select('*', { count:
-  'exact' })` pagination stay fast as row counts grow into the millions.
+- **`sql/migration_perf_indexes.sql`** (run this after `schema.sql`) adds
+  `pg_trgm` indexes so the dashboard's `ILIKE '%value%'` filters use an
+  index instead of a full table scan — this is the change that matters
+  most once tables grow, and the first thing that would otherwise buckle
+  under concurrent filtered report requests.
+- `lib/dashboardQuery.js` now caps how deep OFFSET pagination can go, so a
+  malicious/broken deep-page request can't tie up a database worker.
+- `lib/rateLimit.js` adds a lightweight per-instance rate limit on the
+  inbound keyword endpoints and login, as a cheap safety net against a
+  single runaway caller.
 - Request bodies are capped (100KB for keyword APIs, 10KB for login) so a
   malformed/oversized payload can't tie up a function.
-- If you expect sustained (not just bursty) 20k req/s, consider upgrading
-  the Supabase plan's compute add-on — PostgREST/Postgres CPU, not Vercel,
-  will be the first real ceiling at that sustained volume. Vercel's own
-  scaling is effectively unbounded for short bursts on paid plans.
+- **The remaining real ceiling is Supabase compute**, not this code — see
+  [`PERFORMANCE.md`](./PERFORMANCE.md) for the full scaling checklist
+  (compute sizing, region matching, distributed rate limiting, and the
+  exact-count trade-off on the Consolidated Report) before you load-test
+  against a paid plan.
 
 ---
 
@@ -235,10 +243,13 @@ npm run dev
 
 ```
 sql/schema.sql                     Supabase table/view/index/RLS setup
+sql/migration_perf_indexes.sql     Trigram + composite indexes for high-concurrency filtering
+PERFORMANCE.md                     Scaling checklist (Supabase compute, region, rate limiting)
 lib/supabaseAdmin.js               Server-side Supabase client (singleton)
 lib/timezone.js                    Europe/Istanbul date/time helper
 lib/validate.js                    Input validation helpers
 lib/auth.js                        JWT session + inbound API key checks
+lib/rateLimit.js                   Per-instance rate limiter (inbound endpoints + login)
 lib/dashboardQuery.js              Shared pagination/filter query builder
 lib/useDashboardData.js            Client hook used by dashboard pages
 lib/withAuthSSR.js                 SSR auth guard for dashboard pages

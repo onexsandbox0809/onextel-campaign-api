@@ -2,6 +2,9 @@ const { getSupabaseAdmin } = require('../../lib/supabaseAdmin');
 const { nowInIstanbul } = require('../../lib/timezone');
 const { normalizeMobileNumber, requiredString } = require('../../lib/validate');
 const { isInboundRequestAuthorized } = require('../../lib/auth');
+const { checkRateLimit, getClientIp } = require('../../lib/rateLimit');
+
+const RATE_LIMIT_PER_MINUTE = parseInt(process.env.INBOUND_RATE_LIMIT_PER_MINUTE, 10) || 300;
 
 // Vercel serverless config: keep the function light so cold starts stay fast
 // under bursty concurrency.
@@ -19,6 +22,10 @@ export default async function handler(req, res) {
 
   if (!isInboundRequestAuthorized(req)) {
     return res.status(401).json({ success: false, error: 'Unauthorized: invalid or missing x-api-key.' });
+  }
+
+  if (!checkRateLimit(`${getClientIp(req)}:keyword1`, RATE_LIMIT_PER_MINUTE)) {
+    return res.status(429).json({ success: false, error: 'Too many requests. Please slow down and retry shortly.' });
   }
 
   const body = req.body || {};

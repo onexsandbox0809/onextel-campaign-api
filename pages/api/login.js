@@ -2,6 +2,10 @@ const bcrypt = require('bcryptjs');
 const { getSupabaseAdmin } = require('../../lib/supabaseAdmin');
 const { signSessionToken, buildSessionCookie } = require('../../lib/auth');
 const { requiredString } = require('../../lib/validate');
+const { checkRateLimit, getClientIp } = require('../../lib/rateLimit');
+
+// Tight limit: login is a brute-force target, not a high-throughput route.
+const LOGIN_RATE_LIMIT_PER_MINUTE = parseInt(process.env.LOGIN_RATE_LIMIT_PER_MINUTE, 10) || 15;
 
 export const config = {
   api: {
@@ -13,6 +17,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ success: false, error: 'Method not allowed. Use POST.' });
+  }
+
+  if (!checkRateLimit(`${getClientIp(req)}:login`, LOGIN_RATE_LIMIT_PER_MINUTE)) {
+    return res.status(429).json({ success: false, error: 'Too many login attempts. Please wait a minute and try again.' });
   }
 
   const body = req.body || {};
