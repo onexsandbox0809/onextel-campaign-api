@@ -39,6 +39,9 @@ export default function Keyword1Page({ username }) {
         columns={COLUMNS}
         rows={d.rows}
         loading={d.loading}
+        refreshing={d.refreshing}
+        lastUpdated={d.lastUpdated}
+        onRefresh={d.refresh}
         pagination={{ page: d.page, pageSize: d.pageSize, total: d.total, totalPages: d.totalPages }}
         onPageChange={d.setPage}
         onPageSizeChange={d.changePageSize}

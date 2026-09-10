@@ -173,6 +173,37 @@ input:focus {
 
 .table-wrap { overflow-x: auto; max-height: 68vh; overflow-y: auto; }
 
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-toolbar-updated {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn-refresh .refresh-icon { flex-shrink: 0; }
+
+.btn-refresh.is-refreshing .refresh-icon { animation: spin 0.7s linear infinite; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 table.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 
 .data-table thead th {
@@ -199,15 +230,15 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table tbody tr:hover { background: #fbfbfc; }
 
-/* Wrap long Reason values across all reports without forcing the table wider. */
-.data-table th.reason-column,
-.data-table td.reason-cell {
+/* Wrap long Reason/Other values across all reports without forcing the table wider. */
+.data-table th.wrap-column,
+.data-table td.wrap-cell {
   width: 260px;
   min-width: 220px;
   max-width: 320px;
 }
 
-.data-table td.reason-cell {
+.data-table td.wrap-cell {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
