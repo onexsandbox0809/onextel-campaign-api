@@ -15,7 +15,7 @@ export default function App({ Component, pageProps }) {
 
         <link
           rel="icon"
-          href="/favicon.png"
+          href="/onex.png"
         />
       </Head>
 
