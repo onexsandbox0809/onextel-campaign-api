@@ -3,7 +3,12 @@ const WRAP_COLUMNS = ['reason', 'other'];
 
 function formatUpdatedAt(date) {
   if (!date) return '';
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return date.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: 'Europe/Istanbul',
+  });
 }
 
 export default function DataTable({
