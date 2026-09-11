@@ -15,40 +15,68 @@ function getValue(row, column) {
   return value == null || value === '' ? '-' : value;
 }
 
-async function fetchAllRows(endpoint, filters) {
-  const pageSize = 100;
-  let page = 1;
-  let allRows = [];
+// Bulk export tuning: bigger pages means fewer round-trips, and fetching
+// several pages concurrently means we're not just sitting idle waiting on
+// network latency between each request. 5 concurrent requests is a
+// deliberately modest number -- it speeds things up a lot without hammering
+// Supabase with a huge burst from a single export click.
+const EXPORT_PAGE_SIZE = 1000;
+const EXPORT_CONCURRENCY = 5;
 
-  while (true) {
-    const params = new URLSearchParams();
-    params.set('page', String(page));
-    params.set('pageSize', String(pageSize));
-    if (filters.mobile_number) params.set('mobile_number', filters.mobile_number);
-    if (filters.keyword) params.set('keyword', filters.keyword);
-    if (filters.start_date) params.set('start_date', filters.start_date);
-    if (filters.end_date) params.set('end_date', filters.end_date);
+function buildExportUrl(endpoint, filters, page) {
+  const params = new URLSearchParams();
+  params.set('page', String(page));
+  params.set('pageSize', String(EXPORT_PAGE_SIZE));
+  if (filters.mobile_number) params.set('mobile_number', filters.mobile_number);
+  if (filters.keyword) params.set('keyword', filters.keyword);
+  if (filters.start_date) params.set('start_date', filters.start_date);
+  if (filters.end_date) params.set('end_date', filters.end_date);
+  return `${endpoint}?${params.toString()}`;
+}
 
-    const response = await fetch(`${endpoint}?${params.toString()}`, {
-      credentials: 'include',
-    });
+async function fetchExportPage(endpoint, filters, page) {
+  const response = await fetch(buildExportUrl(endpoint, filters, page), { credentials: 'include' });
 
-    if (response.status === 401) {
-      throw new Error('Your session has expired. Please log in again.');
-    }
-
-    const json = await response.json();
-    if (!response.ok || !json.success) {
-      throw new Error(json.error || 'Failed to export report.');
-    }
-
-    allRows = allRows.concat(json.data || []);
-    const totalPages = json.pagination?.totalPages || 1;
-    if (page >= totalPages) break;
-    page += 1;
+  if (response.status === 401) {
+    throw new Error('Your session has expired. Please log in again.');
   }
 
-  return allRows;
+  const json = await response.json();
+  if (!response.ok || !json.success) {
+    throw new Error(json.error || 'Failed to export report.');
+  }
+  return json;
+}
+
+async function fetchAllRows(endpoint, filters, onProgress) {
+  // First request tells us how many total pages there are at EXPORT_PAGE_SIZE.
+  const first = await fetchExportPage(endpoint, filters, 1);
+  const totalPages = first.pagination?.totalPages || 1;
+
+  const pagesByIndex = new Array(totalPages);
+  pagesByIndex[0] = first.data || [];
+  let completed = 1;
+  if (onProgress) onProgress(completed, totalPages);
+
+  const remainingPages = [];
+  for (let p = 2; p <= totalPages; p += 1) remainingPages.push(p);
+
+  let cursor = 0;
+  async function worker() {
+    while (cursor < remainingPages.length) {
+      const page = remainingPages[cursor];
+      cursor += 1;
+      const json = await fetchExportPage(endpoint, filters, page);
+      pagesByIndex[page - 1] = json.data || [];
+      completed += 1;
+      if (onProgress) onProgress(completed, totalPages);
+    }
+  }
+
+  const workerCount = Math.min(EXPORT_CONCURRENCY, remainingPages.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+
+  return pagesByIndex.flat();
 }
 
 function makeCsv(rows, columns) {
@@ -76,11 +104,15 @@ function downloadBlob(content, filename, type) {
 
 export default function ExportButtons({ endpoint, filters, columns, filename }) {
   const [loading, setLoading] = useState('');
+  const [progress, setProgress] = useState(null); // { completed, totalPages } | null
 
   async function exportReport(format) {
     try {
       setLoading(format);
-      const rows = await fetchAllRows(endpoint, filters);
+      setProgress(null);
+      const rows = await fetchAllRows(endpoint, filters, (completed, totalPages) => {
+        setProgress({ completed, totalPages });
+      });
 
       if (format === 'csv') {
         downloadBlob(
@@ -108,7 +140,17 @@ export default function ExportButtons({ endpoint, filters, columns, filename }) 
       window.alert(error.message || 'Failed to export report.');
     } finally {
       setLoading('');
+      setProgress(null);
     }
+  }
+
+  function labelFor(format, idleLabel, preparingLabel) {
+    if (loading !== format) return idleLabel;
+    if (progress && progress.totalPages > 1) {
+      const pct = Math.round((progress.completed / progress.totalPages) * 100);
+      return `${preparingLabel} ${pct}%`;
+    }
+    return preparingLabel;
   }
 
   return (
@@ -120,7 +162,7 @@ export default function ExportButtons({ endpoint, filters, columns, filename }) 
         onClick={() => exportReport('csv')}
         disabled={!!loading}
       >
-        {loading === 'csv' ? 'Preparing CSV...' : 'CSV'}
+        {labelFor('csv', 'CSV', 'Preparing CSV...')}
       </button>
       <button
         type="button"
@@ -128,7 +170,7 @@ export default function ExportButtons({ endpoint, filters, columns, filename }) 
         onClick={() => exportReport('xlsx')}
         disabled={!!loading}
       >
-        {loading === 'xlsx' ? 'Preparing Excel...' : 'Excel'}
+        {labelFor('xlsx', 'Excel', 'Preparing Excel...')}
       </button>
     </div>
   );
