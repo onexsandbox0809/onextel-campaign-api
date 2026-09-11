@@ -76,7 +76,7 @@ export default function DataTable({
               </tr>
             ) : (
               rows.map((row, idx) => (
-                <tr key={row.id || idx}>
+                <tr key={row.source_table ? `${row.source_table}-${row.id}` : row.id ?? idx}>
                   {columns.map((col) => (
                     <td key={col.key} className={WRAP_COLUMNS.includes(col.key) ? 'wrap-cell' : ''}>{col.render ? col.render(row) : row[col.key] ?? '-'}</td>
                   ))}
